@@ -74,12 +74,12 @@ terraform apply -var-file="terraform.tfvars"
 
 ## Roadmap
 
-| Phase | 내용 | 상태 |
-|-------|------|------|
-| 1 | Recovery Foundation | ✅ |
-| 2 | Production Readiness | ✅ |
-| 3 | AI Assisted Operations | 📋 |
-| 4 | Enterprise Platform | 📋 |
+| Phase | 이름 | 주요 기능 | 상태 |
+|-------|------|-----------|------|
+| 1 | Recovery Foundation | Canary 이중 검증, 자동 FO/FB, DNS Validate + Rollback, Cross-Account | ✅ 완료 |
+| 2 | Production Readiness | Discovery, Diff, Report, Notification, Dashboard, Approval | ✅ 완료 |
+| 3 | AI Assisted Operations | 서비스 위험도 평가, 온보딩 우선순위 추천, Explainable AI | 📋 계획 |
+| 4 | Enterprise Platform | DynamoDB Registry, API Gateway, Web Console, RBAC, 100+ Account | 📋 비전 |
 
 ---
 
@@ -91,6 +91,20 @@ terraform apply -var-file="terraform.tfvars"
 | Canary | ~$12 |
 | Step Functions | ~$1 |
 | S3 + CW + SNS | ~$5 |
+
+---
+
+## Documentation
+
+| 문서 | 설명 |
+|------|------|
+| [Framework Overview](docs/00-framework-overview.md) | 전체 설계 원칙 + 아키텍처 |
+| [Executive Summary](docs/01-executive-summary.md) | 비즈니스 효과 요약 |
+| [Architecture](docs/02-architecture.md) | 상세 아키텍처 + Cross-Account IAM |
+| [Implementation Guide](docs/03-implementation-guide.md) | 배포 가이드 |
+| [Test Runbook](docs/04-test-runbook.md) | E2E 테스트 절차 |
+| [Operations Guide](docs/06-operations-guide.md) | 운영 가이드 + 대시보드 + 알림 |
+| [Roadmap](docs/roadmap.md) | 상세 로드맵 + 비용 |
 
 ---
 
