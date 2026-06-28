@@ -2,7 +2,7 @@
 EERF Governance Custom CloudWatch Metrics Helper
 
 Namespace: EERF/Governance
-All functions gracefully handle CloudWatch failures (log and continue).
+All functions gracefully handle CloudWatch failures.
 """
 import logging
 from datetime import datetime, timezone
@@ -25,7 +25,7 @@ def _put(data):
         _get_cw().put_metric_data(Namespace=NAMESPACE, MetricData=data)
         return True
     except Exception as e:
-        logger.warning(f"Failed to publish metrics: {e}")
+        logger.warning(f"CloudWatch publish failed: {e}")
         return False
 
 def publish_discovery_metrics(total_discovered, active_protected, error_count, canary_coverage, review_required=0):
