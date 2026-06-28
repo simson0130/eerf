@@ -1,0 +1,51 @@
+# EERF Platform Account Configuration Example
+# Copy this file to terraform.tfvars and fill in your values.
+
+region             = "ap-northeast-2"
+name_prefix        = "eerf"
+notification_email = "your-email@example.com"
+org_id             = "o-XXXXXXXXXX"
+
+# Discovery targets (Service Accounts to scan)
+discovery_targets = [
+  {
+    account_id = "111111111111"
+    role_arn   = "arn:aws:iam::111111111111:role/eerf-discovery-trust"
+    region     = "ap-northeast-2"
+  }
+]
+
+discovery_target_role_arns = [
+  "arn:aws:iam::111111111111:role/eerf-discovery-trust"
+]
+
+enable_scheduled_discovery    = true
+discovery_schedule_expression = "cron(0 21 * * ? *)"
+
+# Governance pipeline
+enable_governance_pipeline     = true
+governance_schedule_expression = "cron(0 * * * ? *)"
+slack_webhook_url              = ""
+
+# Protected services (populated after Discovery + Approval)
+# Each key follows naming convention: {subdomain}-{domain_short}-{account_last4}
+services = {
+  # "app-example-1111" = {
+  #   account_id             = "111111111111"
+  #   domain_name            = "example.com"
+  #   app_subdomain          = "app"
+  #   hosted_zone_id         = "Z0123456789ABC"
+  #   alb_arn                = "arn:aws:elasticloadbalancing:ap-northeast-2:111111111111:loadbalancer/app/my-alb/50dc6c495c0c9188"
+  #   alb_dns_name           = "my-alb-123456789.ap-northeast-2.elb.amazonaws.com"
+  #   alb_zone_id            = "ZWKZPGTI48KDX"
+  #   alb_arn_suffix         = "app/my-alb/50dc6c495c0c9188"
+  #   cloudfront_dns_name    = "d111111abcdef8.cloudfront.net"
+  #   cloudfront_zone_id     = "Z2FDTNDATAQYW2"
+  #   cloudfront_id          = "E1ABCDEF123456"
+  #   web_acl_arn            = "arn:aws:wafv2:ap-northeast-2:111111111111:regional/webacl/my-acl/uuid"
+  #   web_acl_name           = "my-web-acl"
+  #   web_acl_id             = "12345678-1234-1234-1234-123456789012"
+  #   emergency_sg_id        = "sg-0123456789abcdef0"
+  #   cross_account_role_arn = "arn:aws:iam::111111111111:role/eerf-app-example-1111-platform-trust"
+  # }
+}
