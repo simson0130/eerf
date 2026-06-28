@@ -4,20 +4,34 @@
 region             = "ap-northeast-2"
 name_prefix        = "eerf"
 notification_email = "your-email@example.com"
-org_id             = "o-XXXXXXXXXX"
 
-# Discovery targets (Service Accounts to scan)
-discovery_targets = [
-  {
-    account_id = "111111111111"
-    role_arn   = "arn:aws:iam::111111111111:role/eerf-discovery-trust"
-    region     = "ap-northeast-2"
-  }
-]
+# ─── Discovery Mode (택 1) ───────────────────────────────────────────────
+#
+# Option A: Organization 자동 발견 (추천)
+#   org_id만 설정하면 Org 내 모든 계정의 eerf-discovery-trust role을 자동 assume
+#
+# Option B: 수동 계정 지정
+#   org_id를 비워두고 discovery_targets에 계정을 명시
+#
+# ─────────────────────────────────────────────────────────────────────────────
 
-discovery_target_role_arns = [
-  "arn:aws:iam::111111111111:role/eerf-discovery-trust"
-]
+# Option A: Organization 모드
+org_id = "o-XXXXXXXXXX"
+discovery_targets          = []
+discovery_target_role_arns = []
+
+# Option B: 수동 지정 모드 (org_id = "" 일 때 사용)
+# org_id = ""
+# discovery_targets = [
+#   {
+#     account_id = "111111111111"
+#     role_arn   = "arn:aws:iam::111111111111:role/eerf-discovery-trust"
+#     region     = "ap-northeast-2"
+#   }
+# ]
+# discovery_target_role_arns = [
+#   "arn:aws:iam::111111111111:role/eerf-discovery-trust"
+# ]
 
 enable_scheduled_discovery    = true
 discovery_schedule_expression = "cron(0 21 * * ? *)"
@@ -28,7 +42,7 @@ governance_schedule_expression = "cron(0 * * * ? *)"
 slack_webhook_url              = ""
 
 # Protected services (populated after Discovery + Approval)
-# Each key follows naming convention: {subdomain}-{domain_short}-{account_last4}
+# Each key follows: {subdomain}-{domain_short}-{account_last4}
 services = {
   # "app-example-1111" = {
   #   account_id             = "111111111111"
