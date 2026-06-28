@@ -1,0 +1,34 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+terraform.tfvars.*
+
+# Build
+.build/
+*.zip
+
+# Python
+__pycache__/
+.pytest_cache/
+
+# Lambda deps
+lambda/yaml/
+lambda/_yaml/
+lambda/*.dist-info/
+
+# IDE
+.vscode/
+.idea/
+.kiro/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+approval-state.yaml
+exclude-services.yaml
+*.json
+!package.json
