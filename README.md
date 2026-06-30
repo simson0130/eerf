@@ -1,113 +1,270 @@
-# EERF — Enterprise Edge Recovery Platform
+<div align="center">
 
-> Recover Automatically. Govern Safely.
+# 🛡️ EERF
 
-외부 CDN(Cloudflare/Akamai/Fastly) 장애 시, AWS Origin 인프라로 **3분 이내 자동 전환**하는 엔터프라이즈 운영 플랫폼.
+### Enterprise Edge Recovery Platform
+
+**Recover Automatically. Govern Safely.**
+
+3-minute automated recovery when your CDN fails — zero operator intervention.
+
+<br>
+
+| MTTR | Intervention | Architecture | Governance | Scale |
+|:----:|:----:|:----:|:----:|:----:|
+| **30min → 3min** | **Zero-touch** | **AWS Native** | **GitOps** | **Multi-Account** |
+
+<br>
+
+<img src="docs/assets/eerf-failover-flow.gif" alt="EERF Failover Flow" width="720">
+
+*CDN Failure → Decision Engine → Route53 Switch → WAF Hardening → Service OK (< 3 min)*
+
+</div>
 
 ---
 
 ## Problem
 
-- CDN 장애 → Origin 정상이어도 서비스 중단
-- 수동 DNS 변경 — 복구 30분~수시간
-- Edge Failure vs Origin Failure 구분 불가
-- 팀마다 다른 복구 절차
+Your services depend on external CDN (Cloudflare, Akamai, Fastly). When the CDN fails:
+
+- 🔴 **Manual DNS change** takes 30 minutes to hours
+- 🔴 **Can't distinguish** Edge failure vs Origin failure
+- 🔴 **Origin exposed** without CDN protection layer
+- 🔴 **No standard procedure** — every team does it differently
+- 🔴 **New services unprotected** — onboarding takes days
+- 🔴 **No visibility** — changes go undetected
+
+---
+
+## Solution
+
+| Existing Approach | EERF |
+|:---|:---|
+| DNS Failover (manual) | **Decision Engine** (automated, validated) |
+| Manual intervention | **Zero-touch recovery** |
+| Single account | **Multi-Account (Organizations)** |
+| No governance | **GitOps Approval workflow** |
+| Recovery only | **Recovery + Governance Platform** |
+| No visibility | **Dashboard + Hourly scan + Reports** |
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│              Platform Account                        │
-│                                                     │
-│  Phase 1: Canary → Alarm → SFN → Lambda (FO/FB)     │
-│  Phase 2: Discovery → Diff → Report → Notify         │
-│                                                     │
-│                  sts:AssumeRole                      │
-│                       ↓                             │
-├─────────────────────────────────────────────────────┤
-│           Service Account(s)                         │
-│  Route53 ← DNS / WAF ← COUNT↔BLOCK / ALB ← SG        │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Platform Account                          │
+│                                                             │
+│  ┌─── Protection Layer ────────────────────────────────┐    │
+│  │                                                     │    │
+│  │  Canary ──→ Alarm ──→ EventBridge ──→ Step Functions │    │
+│  │  (dual-path)  (2/2)                    │            │    │
+│  │                              ┌─────────┴──────────┐ │    │
+│  │                              │  Failover Lambda   │ │    │
+│  │                              │  • Route53 switch  │ │    │
+│  │                              │  • WAF COUNT→BLOCK │ │    │
+│  │                              │  • Emergency SG    │ │    │
+│  │                              │  • DNS Validate    │ │    │
+│  │                              └────────────────────┘ │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│  ┌─── Governance Layer ────────────────────────────────┐    │
+│  │                                                     │    │
+│  │  EventBridge (hourly)                               │    │
+│  │    → Discovery (Organizations scan)                 │    │
+│  │    → Diff Engine (change detection)                 │    │
+│  │    → Report Generator (HTML report)                 │    │
+│  │    → Notification (SES + Slack + SNS)               │    │
+│  │                                                     │    │
+│  │  Dashboard: eerf-edge-resilience-center             │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                             │
+│                    sts:AssumeRole                            │
+│                         ↓                                   │
+├─────────────────────────────────────────────────────────────┤
+│              Service Account(s) — already in production      │
+│                                                             │
+│  Route53 ← DNS switch        WAF ← COUNT/BLOCK toggle      │
+│  ALB     ← Emergency SG      CloudFront (service-owned)    │
+└─────────────────────────────────────────────────────────────┘
 ```
-
-정상: 사용자 → Route53 → CDN → ALB → EC2
-Failover: 사용자 → Route53 → ALB 직결 → EC2
 
 ---
 
-## Features
+## Runtime Flow
 
-### Phase 1: Recovery
-- Canary CDN+Origin 이중 검증
-- 자동 Failover (Route53 + WAF BLOCK + Emergency SG)
-- DNS Validate + 자동 Rollback
-- Manual Failback
-- Cross-Account Multi-Service
+```
+                    Normal State
+                    ───────────
+  User → Cloudflare/CF → ALB → App
+         Canary checks both paths ✓
 
-### Phase 2: Governance
-- Discovery (Organizations 동적 발견)
-- Diff Engine (시간별 변경 비교)
-- Report Generator (Markdown 보고서)
-- Notification (점검보고 + 온보딩 알림 + 삭제 감지)
-- CloudWatch 대시보드 (eerf-edge-resilience-center)
-- Approval State (Pending → Approved)
+                    CDN Failure Detected
+                    ───────────────────
+  Canary: CDN ✗ + Origin ✓ → ALARM
+    → Step Functions triggered
+      → 1. Route53: CNAME → ALB          (DNS bypass CDN)
+      → 2. WAF: COUNT → BLOCK            (harden origin)
+      → 3. ALB: attach Emergency SG      (allow direct access)
+      → 4. Wait 45s → DNS Validate       (confirm health)
+      → 5. If validate fails → auto rollback
+    → SNS/SES notification sent
+    → Audit log written to S3
+
+                    Recovery Complete (< 3 min)
+                    ─────────────────────────
+  User → ALB (direct) → WAF(BLOCK) → App ✓
+
+                    Manual Failback (operator confirms CDN is back)
+                    ──────────────────────────────────────────────
+  Operator → Manual Failback SFN
+    → Route53: CNAME → CloudFront
+    → WAF: BLOCK → COUNT
+    → ALB: detach Emergency SG
+    → Validate → Done
+```
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Service Account에 Trust Role 배포
+# 1. Deploy Trust Role in each Service Account
 cd service/
-terraform apply
+cp terraform.tfvars.example terraform.tfvars
+# Fill in: service_name, domain_name, platform_account_id
+terraform init && terraform apply
 
-# 2. Platform Account 배포
-cd platform/
-terraform apply -var-file="terraform.tfvars"
+# 2. Deploy Platform Account (orchestration + governance)
+cd ../platform/
+cp terraform.tfvars.example terraform.tfvars
+# Fill in: notification_email, org_id or discovery_targets
+terraform init && terraform apply
 
-# 3. 자동 스캔 시작 (매 정시)
+# 3. Discovery runs automatically (hourly)
+#    → Email report arrives
+#    → Dashboard: eerf-edge-resilience-center
+
+# 4. Approve discovered services
+eerf approve app-example-1111 --reason "Production service"
+
+# 5. Add approved service to services map → terraform apply
+#    → Canary created → Protection active ✓
 ```
+
+**Time to first protection: ~15 minutes**
+
+---
+
+## Repository Structure
+
+```
+eerf/
+├── platform/                    # 🎛️  Orchestration + Governance
+│   ├── canary.tf                    # Synthetics canary (dual-path check)
+│   ├── canary-token.tf              # Token rotation (90-day cycle)
+│   ├── failover.tf                  # Failover/Failback Step Functions
+│   ├── failover-lambda.tf           # FO/FB/Validate Lambda functions
+│   ├── discovery.tf                 # Service discovery (Organizations)
+│   ├── scan-pipeline.tf             # Governance: Diff → Report → Notify
+│   ├── dashboard.tf                 # CloudWatch dashboards
+│   ├── iam-cross-account.tf         # Cross-account IAM roles
+│   ├── ses.tf                       # SES email delivery
+│   ├── services.tf                  # Service config loader (JSON + tfvars)
+│   ├── ssm-services.tf              # SSM Parameter Store registration
+│   ├── storage.tf                   # S3 audit + SNS topic
+│   ├── lambda/                      # Python Lambda source
+│   │   ├── discovery.py                 # Organizations cross-account scan
+│   │   ├── failover.py                  # DNS + WAF + SG automation
+│   │   ├── failback.py                  # Restore to CDN path
+│   │   ├── dns_validate.py              # Post-switch health validation
+│   │   ├── diff_engine.py               # Snapshot comparison engine
+│   │   ├── report_generator.py          # HTML governance report
+│   │   ├── notification.py              # SES + Slack + SNS delivery
+│   │   ├── approval_state.py            # Approval workflow state machine
+│   │   ├── exclude_services.py          # Exclusion list management
+│   │   ├── metrics.py                   # CloudWatch custom metrics
+│   │   ├── token_rotation.py            # Canary token rotation
+│   │   └── onboarding_pr.py             # Auto-PR for new services
+│   ├── canary/
+│   │   └── canary.py                # Synthetics handler (CDN + Origin)
+│   └── services/                    # Per-service JSON configs
+│
+├── service/                     # 🏗️  Service Account (infra + trust)
+│   ├── network.tf                   # VPC, subnets, NAT
+│   ├── alb.tf                       # ALB + security groups
+│   ├── waf.tf                       # WAF Web ACL (COUNT mode)
+│   ├── cdn.tf                       # CloudFront distribution
+│   ├── compute.tf                   # EC2 sample app
+│   ├── dns.tf                       # Route53 records
+│   ├── acm.tf                       # TLS certificates
+│   ├── iam-platform-trust.tf        # Cross-account trust roles
+│   └── dashboard.tf                 # Service-level dashboard
+│
+├── tools/                       # 🔧  Operational scripts
+│   └── eerf-cli/                    # CLI for approve/defer/exclude
+│
+└── docs/                        # 📚  Documentation
+    ├── 00-product-overview.md
+    ├── 01-executive-summary.md
+    ├── 02-architecture.md
+    ├── 03-implementation-guide.md
+    ├── 04-test-runbook.md
+    ├── 05-lessons-learned.md
+    ├── 06-operations-guide.md
+    └── adr/                         # Architecture Decision Records
+```
+
+---
+
+## Key Design Decisions
+
+| # | Decision | Rationale |
+|---|----------|----------|
+| [ADR-001](docs/adr/ADR-001-platform-service-separation.md) | Platform / Service separation | Least privilege, multi-account scale |
+| [ADR-002](docs/adr/ADR-002-discovery-approval-model.md) | Discovery + Approval model | Auto-discover, human-approve |
+| [ADR-003](docs/adr/ADR-003-dead-origin-simulation.md) | Dead Origin testing | Safe CDN failure simulation |
+| [ADR-004](docs/adr/ADR-004-canary-dual-path-check.md) | Dual-path canary | Only failover when Edge is the problem |
+| [ADR-005](docs/adr/ADR-005-waf-count-to-block.md) | WAF auto-hardening | Origin protection without CDN |
+| [ADR-006](docs/adr/ADR-006-manual-failback.md) | Manual failback | Prevent premature rollback |
 
 ---
 
 ## Roadmap
 
-| Phase | 이름 | 주요 기능 | 상태 |
-|-------|------|-----------|------|
-| 1 | Recovery Foundation | Canary 이중 검증, 자동 FO/FB, DNS Validate + Rollback, Cross-Account | ✅ 완료 |
-| 2 | Production Readiness | Discovery, Diff, Report, Notification, Dashboard, Approval | ✅ 완료 |
-| 3 | AI Assisted Operations | 서비스 위험도 평가, 온보딩 우선순위 추천, Explainable AI | 📋 계획 |
-| 4 | Enterprise Platform | DynamoDB Registry, API Gateway, Web Console, RBAC, 100+ Account | 📋 비전 |
+| Version | Milestone | Status |
+|---------|-----------|--------|
+| v0.1 | CloudFront single-account PoC | ✅ Done |
+| v0.2 | Multi-Account + Governance Pipeline | ✅ Done |
+| v0.3 | Lambda consolidation + Cloudflare API | 📋 Planned |
+| v0.4 | AFT (Account Factory for Terraform) integration | 📋 Planned |
+| v0.5 | Route53 ARC / AIOps | 💡 Exploring |
 
 ---
 
-## Cost (~$23/month per service)
+## Vision
 
-| Resource | Cost |
-|----------|------|
-| Lambda (7) | ~$5 |
-| Canary | ~$12 |
-| Step Functions | ~$1 |
-| S3 + CW + SNS | ~$5 |
+<div align="center">
+
+| | Today | Tomorrow |
+|:--|:--|:--|
+| **Scope** | Enterprise Edge Recovery | Enterprise Recovery Platform |
+| **Edge** | CloudFront / Cloudflare | Multi-Edge (Akamai, Fastly, ...) |
+| **Operations** | Rule-based automation | AI-Assisted Operations |
+| **Governance** | Approval workflow | Enterprise Governance (SOC2, ISO) |
+| **Integration** | Terraform + CLI | Service Catalog + Portal |
+
+</div>
 
 ---
 
-## Documentation
+## Contributing
 
-| 문서 | 설명 |
-|------|------|
-| [Framework Overview](docs/00-framework-overview.md) | 전체 설계 원칙 + 아키텍처 |
-| [Executive Summary](docs/01-executive-summary.md) | 비즈니스 효과 요약 |
-| [Architecture](docs/02-architecture.md) | 상세 아키텍처 + Cross-Account IAM |
-| [Implementation Guide](docs/03-implementation-guide.md) | 배포 가이드 |
-| [Test Runbook](docs/04-test-runbook.md) | E2E 테스트 절차 |
-| [Operations Guide](docs/06-operations-guide.md) | 운영 가이드 + 대시보드 + 알림 |
-| [Roadmap](docs/roadmap.md) | 상세 로드맵 + 비용 |
+Contributions welcome. Please read the [Architecture doc](docs/02-architecture.md) before submitting PRs.
 
 ---
 
 ## License
 
-Apache-2.0
+MIT
