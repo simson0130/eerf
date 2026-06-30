@@ -22,13 +22,25 @@
 |:----:|:----:|:----:|:----:|:----:|
 | **30min → 3min** | **Zero-touch** | **AWS Native** | **GitOps** | **Multi-Account** |
 
+</div>
+
 <br>
 
-<img src="docs/assets/eerf-failover-flow.svg" alt="EERF Failover Flow" width="720">
+```mermaid
+flowchart LR
+    A["❌ CDN Failure"] -->|Canary detects| B["🧠 Decision Engine"]
+    B -->|"CDN ✗ Origin ✓"| C["🔄 Route53 → ALB"]
+    C --> D["🛡️ WAF BLOCK"]
+    D --> E["✅ Service OK"]
+    
+    style A fill:#e74c3c,color:#fff
+    style B fill:#2d3e50,color:#fff
+    style C fill:#3498db,color:#fff
+    style D fill:#9b59b6,color:#fff
+    style E fill:#27ae60,color:#fff
+```
 
-*CDN Failure → Decision Engine → Route53 Switch → WAF Hardening → Service OK (< 3 min)*
-
-</div>
+*Total elapsed: < 3 minutes — fully automated, zero operator intervention*
 
 ---
 
@@ -70,7 +82,7 @@ eerf approve app-example-1111 --reason "Production ready"
 | **Rollback** | Manual | Auto-rollback on validation failure |
 | **Onboarding** | Manual per-service | Auto-discovery + Approval workflow |
 
-**Route53 Failover solves "is my origin alive?"**
+**Route53 Failover solves "is my origin alive?"**  
 **EERF solves "my CDN is dead, recover the entire path safely."**
 
 ---
@@ -88,71 +100,37 @@ Your services depend on external CDN (Cloudflare, Akamai, Fastly). When the CDN 
 
 ---
 
-## Solution
-
-| Existing Approach | EERF |
-|:---|:---|
-| DNS Failover (manual) | **Decision Engine** (automated, validated) |
-| Manual intervention | **Zero-touch recovery** |
-| Single account | **Multi-Account (Organizations)** |
-| No governance | **GitOps Approval workflow** |
-| Recovery only | **Recovery + Governance Platform** |
-| No visibility | **Dashboard + Hourly scan + Reports** |
-
----
-
-## In Action
-
-<div align="center">
-
-| Edge Resilience Center Dashboard | Governance Report (Email) |
-|:---:|:---:|
-| <img src="docs/assets/dashboard-screenshot.png" alt="Dashboard" width="380"> | <img src="docs/assets/report-screenshot.png" alt="Report" width="380"> |
-
-*Real operational screens from production deployment*
-
-</div>
-
----
-
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Platform Account                          │
-│                                                             │
-│  ┌─── Protection Layer ────────────────────────────────┐    │
-│  │                                                     │    │
-│  │  Canary ──→ Alarm ──→ EventBridge ──→ Step Functions │    │
-│  │  (dual-path)  (2/2)                    │            │    │
-│  │                              ┌─────────┴──────────┐ │    │
-│  │                              │  Failover Lambda   │ │    │
-│  │                              │  • Route53 switch  │ │    │
-│  │                              │  • WAF COUNT→BLOCK │ │    │
-│  │                              │  • Emergency SG    │ │    │
-│  │                              │  • DNS Validate    │ │    │
-│  │                              └────────────────────┘ │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│  ┌─── Governance Layer ────────────────────────────────┐    │
-│  │                                                     │    │
-│  │  EventBridge (hourly)                               │    │
-│  │    → Discovery (Organizations scan)                 │    │
-│  │    → Diff Engine (change detection)                 │    │
-│  │    → Report Generator (HTML report)                 │    │
-│  │    → Notification (SES + Slack + SNS)               │    │
-│  │                                                     │    │
-│  │  Dashboard: eerf-edge-resilience-center             │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                                                             │
-│                    sts:AssumeRole                            │
-│                         ↓                                   │
-├─────────────────────────────────────────────────────────────┤
-│              Service Account(s) — already in production      │
-│                                                             │
-│  Route53 ← DNS switch        WAF ← COUNT/BLOCK toggle      │
-│  ALB     ← Emergency SG      CloudFront (service-owned)    │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Platform["Platform Account"]
+        subgraph Protection["Protection Layer"]
+            Canary[Canary<br/>dual-path] --> Alarm[CloudWatch Alarm]
+            Alarm --> EB[EventBridge]
+            EB --> SFN[Step Functions]
+            SFN --> FO[Failover Lambda<br/>Route53 + WAF + SG]
+            SFN --> Validate[DNS Validate]
+        end
+        subgraph Governance["Governance Layer"]
+            Schedule[EventBridge hourly] --> Discovery[Discovery<br/>Org scan]
+            Discovery --> Diff[Diff Engine]
+            Diff --> Report[Report Generator]
+            Report --> Notify[Notification<br/>SES + Slack]
+        end
+    end
+    
+    subgraph Service["Service Account(s)"]
+        R53[Route53]
+        WAF[WAF]
+        ALB[ALB]
+        CF[CloudFront]
+    end
+    
+    FO -->|sts:AssumeRole| R53
+    FO -->|sts:AssumeRole| WAF
+    FO -->|sts:AssumeRole| ALB
+    Discovery -->|sts:AssumeRole| Service
 ```
 
 ---
@@ -160,34 +138,21 @@ Your services depend on external CDN (Cloudflare, Akamai, Fastly). When the CDN 
 ## Runtime Flow
 
 ```
-                    Normal State
-                    ───────────
-  User → Cloudflare/CF → ALB → App
-         Canary checks both paths ✓
+  Normal:     User → CDN → ALB → App        (Canary checks both paths ✓)
 
-                    CDN Failure Detected
-                    ───────────────────
-  Canary: CDN ✗ + Origin ✓ → ALARM
-    → Step Functions triggered
-      → 1. Route53: CNAME → ALB          (DNS bypass CDN)
-      → 2. WAF: COUNT → BLOCK            (harden origin)
-      → 3. ALB: attach Emergency SG      (allow direct access)
-      → 4. Wait 45s → DNS Validate       (confirm health)
-      → 5. If validate fails → auto rollback
-    → SNS/SES notification sent
-    → Audit log written to S3
+  Failure:    Canary: CDN ✗ + Origin ✓ → ALARM
+              → Step Functions:
+                1. Route53: CNAME → ALB       (bypass CDN)
+                2. WAF: COUNT → BLOCK         (harden origin)
+                3. ALB: Emergency SG          (allow direct)
+                4. Wait 45s → Validate        (health check)
+                5. Fail? → auto rollback
+              → Notification sent, Audit logged
 
-                    Recovery Complete (< 3 min)
-                    ─────────────────────────
-  User → ALB (direct) → WAF(BLOCK) → App ✓
+  Recovered:  User → ALB (direct) → WAF(BLOCK) → App ✓    (< 3 min)
 
-                    Manual Failback (operator confirms CDN is back)
-                    ──────────────────────────────────────────────
-  Operator → Manual Failback SFN
-    → Route53: CNAME → CloudFront
-    → WAF: BLOCK → COUNT
-    → ALB: detach Emergency SG
-    → Validate → Done
+  Failback:   Operator confirms CDN back → Manual SFN
+              → Route53 → CF, WAF → COUNT, SG detach → Validate
 ```
 
 ---
@@ -197,58 +162,42 @@ Your services depend on external CDN (Cloudflare, Akamai, Fastly). When the CDN 
 ```
 eerf/
 ├── platform/                    # 🎛️  Orchestration + Governance
-│   ├── canary.tf                    # Synthetics canary (dual-path check)
-│   ├── canary-token.tf              # Token rotation (90-day cycle)
+│   ├── canary.tf                    # Synthetics canary (dual-path)
+│   ├── canary-token.tf              # Token rotation (90-day)
 │   ├── failover.tf                  # Failover/Failback Step Functions
-│   ├── failover-lambda.tf           # FO/FB/Validate Lambda functions
+│   ├── failover-lambda.tf           # FO/FB/Validate Lambda
 │   ├── discovery.tf                 # Service discovery (Organizations)
 │   ├── scan-pipeline.tf             # Governance: Diff → Report → Notify
 │   ├── dashboard.tf                 # CloudWatch dashboards
-│   ├── iam-cross-account.tf         # Cross-account IAM roles
+│   ├── iam-cross-account.tf         # Cross-account IAM
 │   ├── ses.tf                       # SES email delivery
-│   ├── services.tf                  # Service config loader (JSON + tfvars)
-│   ├── ssm-services.tf              # SSM Parameter Store registration
-│   ├── storage.tf                   # S3 audit + SNS topic
+│   ├── services.tf                  # Service config loader
+│   ├── ssm-services.tf              # SSM Parameter Store
+│   ├── storage.tf                   # S3 audit + SNS
 │   ├── lambda/                      # Python Lambda source
-│   │   ├── discovery.py                 # Organizations cross-account scan
-│   │   ├── failover.py                  # DNS + WAF + SG automation
-│   │   ├── failback.py                  # Restore to CDN path
-│   │   ├── dns_validate.py              # Post-switch health validation
-│   │   ├── diff_engine.py               # Snapshot comparison engine
-│   │   ├── report_generator.py          # HTML governance report
-│   │   ├── notification.py              # SES + Slack + SNS delivery
-│   │   ├── approval_state.py            # Approval workflow state machine
-│   │   ├── exclude_services.py          # Exclusion list management
-│   │   ├── metrics.py                   # CloudWatch custom metrics
-│   │   ├── token_rotation.py            # Canary token rotation
-│   │   └── onboarding_pr.py             # Auto-PR for new services
-│   ├── canary/
-│   │   └── canary.py                # Synthetics handler (CDN + Origin)
+│   │   ├── discovery.py             # Organizations cross-account scan
+│   │   ├── failover.py              # DNS + WAF + SG automation
+│   │   ├── failback.py              # Restore to CDN path
+│   │   ├── dns_validate.py          # Post-switch health check
+│   │   ├── diff_engine.py           # Snapshot comparison
+│   │   ├── report_generator.py      # HTML governance report
+│   │   ├── notification.py          # SES + Slack + SNS
+│   │   ├── approval_state.py        # Approval state machine
+│   │   ├── exclude_services.py      # Exclusion management
+│   │   ├── metrics.py               # CloudWatch metrics
+│   │   ├── token_rotation.py        # Canary token rotation
+│   │   └── onboarding_pr.py         # Auto-PR for new services
+│   ├── canary/canary.py             # Synthetics handler
 │   └── services/                    # Per-service JSON configs
 │
 ├── service/                     # 🏗️  Service Account (infra + trust)
-│   ├── network.tf                   # VPC, subnets, NAT
-│   ├── alb.tf                       # ALB + security groups
-│   ├── waf.tf                       # WAF Web ACL (COUNT mode)
-│   ├── cdn.tf                       # CloudFront distribution
-│   ├── compute.tf                   # EC2 sample app
-│   ├── dns.tf                       # Route53 records
-│   ├── acm.tf                       # TLS certificates
-│   ├── iam-platform-trust.tf        # Cross-account trust roles
-│   └── dashboard.tf                 # Service-level dashboard
+│   ├── network.tf, alb.tf, waf.tf, cdn.tf, compute.tf
+│   ├── dns.tf, acm.tf, dashboard.tf
+│   └── iam-platform-trust.tf        # Cross-account trust roles
 │
-├── tools/                       # 🔧  Operational scripts
-│   └── eerf-cli/                    # CLI for approve/defer/exclude
+├── tools/eerf-cli/              # 🔧  CLI (approve/defer/exclude)
 │
-└── docs/                        # 📚  Documentation
-    ├── 00-product-overview.md
-    ├── 01-executive-summary.md
-    ├── 02-architecture.md
-    ├── 03-implementation-guide.md
-    ├── 04-test-runbook.md
-    ├── 05-lessons-learned.md
-    ├── 06-operations-guide.md
-    └── adr/                         # Architecture Decision Records
+└── docs/                        # 📚  Documentation + ADRs
 ```
 
 ---
