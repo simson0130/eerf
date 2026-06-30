@@ -5,15 +5,12 @@ region             = "ap-northeast-2"
 name_prefix        = "eerf"
 notification_email = "your-email@example.com"
 
-# ─── Discovery Mode (택 1) ───────────────────────────────────────────────
+# ─── Discovery Mode (택 1) ───────────────────────────────────────
 #
 # Option A: Organization 자동 발견 (추천)
-#   org_id만 설정하면 Org 내 모든 계정의 eerf-discovery-trust role을 자동 assume
-#
 # Option B: 수동 계정 지정
-#   org_id를 비워두고 discovery_targets에 계정을 명시
 #
-# ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 
 # Option A: Organization 모드
 org_id = "o-XXXXXXXXXX"
@@ -42,7 +39,6 @@ governance_schedule_expression = "cron(0 * * * ? *)"
 slack_webhook_url              = ""
 
 # Protected services (populated after Discovery + Approval)
-# Each key follows: {subdomain}-{domain_short}-{account_last4}
 services = {
   # "app-example-1111" = {
   #   account_id             = "111111111111"
@@ -60,6 +56,6 @@ services = {
   #   web_acl_name           = "my-web-acl"
   #   web_acl_id             = "12345678-1234-1234-1234-123456789012"
   #   emergency_sg_id        = "sg-0123456789abcdef0"
-  #   cross_account_role_arn = "arn:aws:iam::111111111111:role/eerf-app-example-1111-platform-trust"
+  #   cross_account_role_arn = "arn:aws:iam::111111111111:role/eerf-platform-trust"
   # }
 }

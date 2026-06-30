@@ -1,34 +1,42 @@
 # Terraform
 .terraform/
 *.tfstate
-*.tfstate.*
-terraform.tfvars
-terraform.tfvars.*
+*.tfstate.backup
+*.tfvars
+*.tfvars.shared
+*.tfvars.sandbox
+.terraform.lock.hcl
 
-# Build
-.build/
+# Build artifacts
+platform/.build/
 *.zip
 
 # Python
 __pycache__/
 .pytest_cache/
+*.pyc
 
-# Lambda deps
-lambda/yaml/
-lambda/_yaml/
-lambda/*.dist-info/
+# Lambda dependencies
+platform/lambda/yaml/
+platform/lambda/_yaml/
+platform/lambda/pyyaml-6.0.3.dist-info/
+
+# Temp files
+cf-config.json
+cf-update-*.json
+
+# OS
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
 .idea/
 .kiro/
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Secrets
-approval-state.yaml
-exclude-services.yaml
-*.json
-!package.json
+# Temporary/test files
+result.json
+payload.json
+test_result.txt
+approve-payload.json
+*.egg-info/
