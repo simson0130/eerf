@@ -16,7 +16,7 @@
 
 <br>
 
-<img src="docs/assets/eerf-failover-flow.gif" alt="EERF Failover Flow" width="720">
+<img src="docs/assets/eerf-failover-flow.svg" alt="EERF Failover Flow" width="720">
 
 *CDN Failure → Decision Engine → Route53 Switch → WAF Hardening → Service OK (< 3 min)*
 
