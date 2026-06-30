@@ -1,0 +1,20 @@
+# Service configuration template (example)
+# Copy and fill for each service to onboard
+{
+  "account_id": "111111111111",
+  "domain_name": "example-corp.com",
+  "app_subdomain": "app",
+  "hosted_zone_id": "ZXXXXXXXXXXXXXXXXX",
+  "alb_arn": "arn:aws:elasticloadbalancing:ap-northeast-2:111111111111:loadbalancer/app/eerf-myservice-alb/xxxxxxxxxx",
+  "alb_dns_name": "eerf-myservice-alb-123456789.ap-northeast-2.elb.amazonaws.com",
+  "alb_zone_id": "ZWKZPGTI48KDX",
+  "alb_arn_suffix": "app/eerf-myservice-alb/xxxxxxxxxx",
+  "cloudfront_dns_name": "dxxxxxxxxxx.cloudfront.net",
+  "cloudfront_zone_id": "Z2FDTNDATAQYW2",
+  "cloudfront_id": "EXXXXXXXXXX",
+  "web_acl_arn": "arn:aws:wafv2:ap-northeast-2:111111111111:regional/webacl/eerf-myservice-alb-web-acl/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "web_acl_name": "eerf-myservice-alb-web-acl",
+  "web_acl_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "emergency_sg_id": "sg-xxxxxxxxxxxxxxxxx",
+  "cross_account_role_arn": "arn:aws:iam::111111111111:role/eerf-platform-trust"
+}
