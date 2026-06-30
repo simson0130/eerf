@@ -10,6 +10,14 @@
 
 <br>
 
+![Phase](https://img.shields.io/badge/Phase_2-Complete-brightgreen)
+![AWS](https://img.shields.io/badge/AWS-Native-FF9900?logo=amazonaws)
+![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python)
+![Status](https://img.shields.io/badge/Enterprise_Ready-Beta-blue)
+
+<br>
+
 | MTTR | Intervention | Architecture | Governance | Scale |
 |:----:|:----:|:----:|:----:|:----:|
 | **30min → 3min** | **Zero-touch** | **AWS Native** | **GitOps** | **Multi-Account** |
@@ -21,6 +29,49 @@
 *CDN Failure → Decision Engine → Route53 Switch → WAF Hardening → Service OK (< 3 min)*
 
 </div>
+
+---
+
+## Quick Start
+
+```bash
+# 1. Deploy Platform Account (orchestration + governance)
+cd platform/
+cp terraform.tfvars.example terraform.tfvars
+terraform init && terraform apply
+
+# 2. Deploy Trust Role in each Service Account
+cd ../service/
+cp terraform.tfvars.example terraform.tfvars
+terraform init && terraform apply
+
+# 3. Discovery runs automatically (hourly) → email arrives
+
+# 4. Approve discovered services
+eerf approve app-example-1111 --reason "Production ready"
+
+# 5. Service is now protected ✓ (Canary + Auto-failover active)
+```
+
+**Time to first protection: ~15 minutes**
+
+---
+
+## Why EERF? (vs Traditional DNS Failover)
+
+| | Traditional Route53 Failover | EERF |
+|:--|:--|:--|
+| **Detection** | Simple health check | Canary cross-validation (CDN + Origin) |
+| **Decision** | Binary UP/DOWN | Decision Engine (Edge-only fault isolation) |
+| **Recovery** | DNS failover only | DNS + WAF hardening + SG automation |
+| **Scope** | Single account | Multi-Account (Organizations) |
+| **Governance** | None | GitOps Approval + Audit trail |
+| **Visibility** | CloudWatch alarm | Dashboard + Hourly scan + Reports |
+| **Rollback** | Manual | Auto-rollback on validation failure |
+| **Onboarding** | Manual per-service | Auto-discovery + Approval workflow |
+
+**Route53 Failover solves "is my origin alive?"**
+**EERF solves "my CDN is dead, recover the entire path safely."**
 
 ---
 
@@ -47,6 +98,20 @@ Your services depend on external CDN (Cloudflare, Akamai, Fastly). When the CDN 
 | No governance | **GitOps Approval workflow** |
 | Recovery only | **Recovery + Governance Platform** |
 | No visibility | **Dashboard + Hourly scan + Reports** |
+
+---
+
+## In Action
+
+<div align="center">
+
+| Edge Resilience Center Dashboard | Governance Report (Email) |
+|:---:|:---:|
+| <img src="docs/assets/dashboard-screenshot.png" alt="Dashboard" width="380"> | <img src="docs/assets/report-screenshot.png" alt="Report" width="380"> |
+
+*Real operational screens from production deployment*
+
+</div>
 
 ---
 
@@ -124,36 +189,6 @@ Your services depend on external CDN (Cloudflare, Akamai, Fastly). When the CDN 
     → ALB: detach Emergency SG
     → Validate → Done
 ```
-
----
-
-## Quick Start
-
-```bash
-# 1. Deploy Trust Role in each Service Account
-cd service/
-cp terraform.tfvars.example terraform.tfvars
-# Fill in: service_name, domain_name, platform_account_id
-terraform init && terraform apply
-
-# 2. Deploy Platform Account (orchestration + governance)
-cd ../platform/
-cp terraform.tfvars.example terraform.tfvars
-# Fill in: notification_email, org_id or discovery_targets
-terraform init && terraform apply
-
-# 3. Discovery runs automatically (hourly)
-#    → Email report arrives
-#    → Dashboard: eerf-edge-resilience-center
-
-# 4. Approve discovered services
-eerf approve app-example-1111 --reason "Production service"
-
-# 5. Add approved service to services map → terraform apply
-#    → Canary created → Protection active ✓
-```
-
-**Time to first protection: ~15 minutes**
 
 ---
 
