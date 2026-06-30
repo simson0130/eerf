@@ -1,17 +1,29 @@
 """
 EERF Governance Custom CloudWatch Metrics Helper
 
+Publishes custom metrics to CloudWatch under the EERF/Governance namespace.
+All functions gracefully handle CloudWatch failures (log and continue).
+
 Namespace: EERF/Governance
-Metrics: TotalDiscovered, ActiveProtected, ErrorCount, CanaryCoverage,
-         Excluded, DriftDetected, PendingApproval, FailoverActive, ReviewRequired
+Metrics:
+  - TotalDiscovered
+  - ActiveProtected
+  - ErrorCount
+  - CanaryCoverage
+  - Excluded
+  - DriftDetected
+  - PendingApproval
 """
 import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
 import boto3
 
 logger = logging.getLogger(__name__)
+
 NAMESPACE = "EERF/Governance"
+
 _cloudwatch_client = None
 
 
@@ -22,39 +34,51 @@ def _get_cloudwatch_client():
     return _cloudwatch_client
 
 
-def _put_metrics(metric_data):
+def _put_metrics(metric_data: List[Dict[str, Any]]) -> bool:
+    if not metric_data:
+        return True
     try:
-        _get_cloudwatch_client().put_metric_data(Namespace=NAMESPACE, MetricData=metric_data)
+        client = _get_cloudwatch_client()
+        client.put_metric_data(Namespace=NAMESPACE, MetricData=metric_data)
         return True
     except Exception as e:
-        logger.warning(f"Failed to publish CloudWatch metrics: {e}")
+        logger.warning(f"[EERF] Failed to publish CloudWatch metrics: {e}")
         return False
 
 
-def publish_discovery_metrics(total_discovered=0, active_protected=0, error_count=0, canary_coverage=0.0, review_required=0):
-    ts = datetime.now(timezone.utc)
-    return _put_metrics([
-        {"MetricName": "TotalDiscovered", "Timestamp": ts, "Value": float(total_discovered), "Unit": "Count"},
-        {"MetricName": "ActiveProtected", "Timestamp": ts, "Value": float(active_protected), "Unit": "Count"},
-        {"MetricName": "ErrorCount", "Timestamp": ts, "Value": float(error_count), "Unit": "Count"},
-        {"MetricName": "CanaryCoverage", "Timestamp": ts, "Value": float(canary_coverage), "Unit": "Percent"},
-        {"MetricName": "ReviewRequired", "Timestamp": ts, "Value": float(review_required), "Unit": "Count"},
-    ])
+def publish_discovery_metrics(
+    total_discovered: int,
+    active_protected: int,
+    error_count: int,
+    canary_coverage: float,
+    review_required: int = 0,
+) -> bool:
+    timestamp = datetime.now(timezone.utc)
+    metric_data = [
+        {"MetricName": "TotalDiscovered", "Timestamp": timestamp, "Value": float(total_discovered), "Unit": "Count"},
+        {"MetricName": "ActiveProtected", "Timestamp": timestamp, "Value": float(active_protected), "Unit": "Count"},
+        {"MetricName": "ErrorCount", "Timestamp": timestamp, "Value": float(error_count), "Unit": "Count"},
+        {"MetricName": "CanaryCoverage", "Timestamp": timestamp, "Value": float(canary_coverage), "Unit": "Percent"},
+        {"MetricName": "ReviewRequired", "Timestamp": timestamp, "Value": float(review_required), "Unit": "Count"},
+    ]
+    return _put_metrics(metric_data)
 
 
-def publish_diff_metrics(excluded=0, drift_detected=False, deleted=0, failover=0):
-    ts = datetime.now(timezone.utc)
-    return _put_metrics([
-        {"MetricName": "Excluded", "Timestamp": ts, "Value": float(excluded), "Unit": "Count"},
-        {"MetricName": "DriftDetected", "Timestamp": ts, "Value": 1.0 if drift_detected else 0.0, "Unit": "Count"},
-        {"MetricName": "Deleted", "Timestamp": ts, "Value": float(deleted), "Unit": "Count"},
-        {"MetricName": "FailoverActive", "Timestamp": ts, "Value": float(failover), "Unit": "Count"},
-    ])
+def publish_diff_metrics(excluded: int, drift_detected: bool, deleted: int = 0, failover: int = 0) -> bool:
+    timestamp = datetime.now(timezone.utc)
+    metric_data = [
+        {"MetricName": "Excluded", "Timestamp": timestamp, "Value": float(excluded), "Unit": "Count"},
+        {"MetricName": "DriftDetected", "Timestamp": timestamp, "Value": 1.0 if drift_detected else 0.0, "Unit": "Count"},
+        {"MetricName": "DeletedCount", "Timestamp": timestamp, "Value": float(deleted), "Unit": "Count"},
+        {"MetricName": "FailoverActive", "Timestamp": timestamp, "Value": float(failover), "Unit": "Count"},
+    ]
+    return _put_metrics(metric_data)
 
 
-def publish_report_metrics(pending_approval=0, approved=0):
-    ts = datetime.now(timezone.utc)
-    return _put_metrics([
-        {"MetricName": "PendingApproval", "Timestamp": ts, "Value": float(pending_approval), "Unit": "Count"},
-        {"MetricName": "ActiveProtected", "Timestamp": ts, "Value": float(approved), "Unit": "Count"},
-    ])
+def publish_report_metrics(pending_approval: int, approved: int = 0) -> bool:
+    timestamp = datetime.now(timezone.utc)
+    metric_data = [
+        {"MetricName": "PendingApproval", "Timestamp": timestamp, "Value": float(pending_approval), "Unit": "Count"},
+        {"MetricName": "ActiveProtected", "Timestamp": timestamp, "Value": float(approved), "Unit": "Count"},
+    ]
+    return _put_metrics(metric_data)
