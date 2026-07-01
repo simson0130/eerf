@@ -217,13 +217,35 @@ eerf/
 
 ## Roadmap
 
-| Version | Milestone | Status |
-|---------|-----------|--------|
-| v0.1 | CloudFront single-account PoC | ✅ Done |
-| v0.2 | Multi-Account + Governance Pipeline | ✅ Done |
-| v0.3 | Lambda consolidation + Cloudflare API | 📋 Planned |
-| v0.4 | AFT (Account Factory for Terraform) integration | 📋 Planned |
-| v0.5 | Route53 ARC / AIOps | 💡 Exploring |
+```mermaid
+graph LR
+    P1["Phase 1<br/><b>Recovery</b><br/>Single-account PoC"]
+    P2["Phase 2<br/><b>Production Ready</b><br/>Multi-Account + Governance"]
+    P3["Phase 3<br/><b>Provider Adapter</b><br/>Multi-CDN / Multi-Origin"]
+    P4["Phase 4<br/><b>AI Assisted</b><br/>Predictive + Auto-tuning"]
+    P5["Phase 5<br/><b>Enterprise Platform</b><br/>Service Catalog + Portal"]
+
+    P1 --> P2 --> P3 --> P4 --> P5
+
+    style P1 fill:#27ae60,color:#fff
+    style P2 fill:#27ae60,color:#fff
+    style P3 fill:#3498db,color:#fff
+    style P4 fill:#9b59b6,color:#fff
+    style P5 fill:#2d3e50,color:#fff
+```
+
+| Phase | Focus | Key Deliverables | Status |
+|:---:|:---|:---|:---:|
+| **1** | Recovery | CloudFront failover, single account | ✅ Done |
+| **2** | Production Ready | Multi-Account, Governance Pipeline, Dashboard, CLI | ✅ Done |
+| **3** | Provider Adapter | Cloudflare/Akamai/Fastly adapters, unified policy model | 📋 Next |
+| **4** | AI Assisted | Anomaly prediction, auto-tuning thresholds, incident correlation | 💡 Planned |
+| **5** | Enterprise Platform | Service Catalog, Portal UI, SOC2/ISO compliance, AFT integration | 💡 Planned |
+
+**Why this order?**
+- Multi-vendor Recovery Orchestration (Phase 3) has the highest market differentiation — competitors can bolt on AI, but unified multi-CDN control under a single governance model is architecturally hard.
+- AI (Phase 4) amplifies value *on top of* multi-vendor data; it needs operational history across providers to be meaningful.
+- Enterprise Platform (Phase 5) is the capstone that turns a tool into a product.
 
 ---
 
@@ -231,13 +253,16 @@ eerf/
 
 <div align="center">
 
-| | Today | Tomorrow |
-|:--|:--|:--|
-| **Scope** | Enterprise Edge Recovery | Enterprise Recovery Platform |
-| **Edge** | CloudFront / Cloudflare | Multi-Edge (Akamai, Fastly, ...) |
-| **Operations** | Rule-based automation | AI-Assisted Operations |
-| **Governance** | Approval workflow | Enterprise Governance (SOC2, ISO) |
-| **Integration** | Terraform + CLI | Service Catalog + Portal |
+**From Recovery Tool → Edge Resilience Accelerator → Enterprise Resilience Platform**
+
+| | Phase 2 (Now) | Phase 3 | Phase 5 |
+|:--|:--|:--|:--|
+| **Providers** | CloudFront | + Cloudflare, Akamai, Fastly | Any Edge |
+| **Recovery** | Automated failover | Provider-aware orchestration | Self-healing |
+| **Governance** | Approval + Reports | Unified policy across vendors | SOC2/ISO compliance |
+| **Operations** | Rule-based | Multi-vendor correlation | AI-assisted |
+| **Integration** | Terraform + CLI | Provider APIs + Webhooks | Service Catalog + Portal |
+| **Positioning** | CDN Failover tool | Edge Resilience Accelerator | Enterprise Resilience Platform |
 
 </div>
 
