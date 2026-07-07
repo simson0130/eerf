@@ -1,84 +1,49 @@
-# EERF Operations Guide
-
----
-
-## 일일 운영 흐름
-
-```
-매 정시 (EventBridge)
-  -> Discovery (계정 스캔)
-  -> Diff Engine (변경 비교)
-  -> Report Generator (HTML 보고서)
-  -> Notification (SES 이메일)
-```
+# EERF 운영 가이드
 
 ---
 
 ## CLI 명령어
 
 ```powershell
-# 상태 요약 (4축 표시)
-eerf --bucket {AUDIT_BUCKET} status
-
-# 승인 대기 목록
-eerf --bucket {AUDIT_BUCKET} list-pending
-
-# 서비스 승인
-eerf --bucket {AUDIT_BUCKET} approve "{account_id}:{fqdn}" --reason "보호 대상"
-
-# 보류
-eerf --bucket {AUDIT_BUCKET} defer "{account_id}:{fqdn}" --reason "다음 분기"
-
-# 제외
-eerf --bucket {AUDIT_BUCKET} exclude "{account_id}:{fqdn}" --reason "내부 서비스"
-
-# 재검토
-eerf --bucket {AUDIT_BUCKET} reopen "{account_id}:{fqdn}" --reason "재평가"
-
-# 변경 이력 조회
-eerf --bucket {AUDIT_BUCKET} history {service_key}
-eerf --bucket {AUDIT_BUCKET} history {service_key} --axis OPERATION -n 5
+eerf --bucket <bucket> status
+eerf --bucket <bucket> approve <key> --reason "..."
+eerf --bucket <bucket> defer <key> --reason "..."
+eerf --bucket <bucket> exclude <key> --reason "..."
+eerf --bucket <bucket> reopen <key> --reason "..."
+eerf --bucket <bucket> history <key> -n 10
+eerf --bucket <bucket> history <key> --axis OPERATION
 ```
 
 ---
 
-## 알림 체계 (alert.py 통합 모듈)
+## 알림 18종 카탈로그
 
-### Recovery
-| Subject | 조건 |
-|---------|------|
-| [EERF] Failover 실행 - {fqdn} | 자동 FO 성공 |
-| [EERF] Failover 롤백 - {fqdn} | DNS 검증 실패 후 원복 |
-| [EERF] Failback 완료 - {fqdn} | 수동 FB 성공 |
-| [EERF] 서비스 이상 감지 - {fqdn} | Canary ALARM |
-| [EERF] 서비스 정상 복구 - {fqdn} | Canary OK |
-
-### Governance
-| Subject | 조건 |
-|---------|------|
-| [EERF] 보호 승인 - {fqdn} | eerf approve |
-| [EERF] 보호 보류 - {fqdn} | eerf defer |
-| [EERF] 보호 제외 - {fqdn} | eerf exclude |
-| [EERF] 정기 점검 - 신규 N / 변경 N | 매시간 |
-
-### System
-| Subject | 조건 |
-|---------|------|
-| [EERF] SFN 실행 실패 - {sfn} | SFN FAILED |
-| [EERF] 토큰 교체 완료 | 90일 주기 |
-| [EERF] 이력 기록 실패 | History Lambda 에러 |
+| AlertType | 트리거 | 대응 |
+|-----------|--------|------|
+| FAILOVER_SUCCESS | FO Lambda 성공 | CDN 복구 대기 → Failback |
+| FAILOVER_ROLLBACK | DNS 검증 실패 | ALB/App 상태 확인 |
+| FAILBACK_SUCCESS | FB Lambda 성공 | 추가 조치 없음 |
+| FAILBACK_FAILED | FB Lambda 실패 | Route53/WAF/SG 수동 확인 |
+| HEALTH_UNHEALTHY | Canary ALARM | 서비스 상태 확인 |
+| HEALTH_RECOVERED | Canary OK | 추가 조치 없음 |
+| REPORT_CHANGES | 파이프라인 | 보고서 확인 |
+| REPORT_NO_CHANGES | 파이프라인 | 확인만 |
+| ONBOARDING_NEEDED | 신규 발견 | eerf approve 검토 |
+| GOVERNANCE_APPROVED | eerf approve | terraform apply |
+| GOVERNANCE_DEFERRED | eerf defer | 추후 재검토 |
+| GOVERNANCE_EXCLUDED | eerf exclude | - |
+| GOVERNANCE_REOPENED | eerf reopen | eerf approve |
+| SFN_FAILED | SFN 실패 | SFN 실행 이력 확인 |
+| PIPELINE_ERROR | Lambda 에러 | Lambda 로그 확인 |
+| TOKEN_ROTATED | 90일 rotation | 추가 조치 없음 |
+| TOKEN_ROTATION_FAILED | rotation 에러 | SSM 수동 확인 |
+| HISTORY_WRITE_FAILED | stream_history 에러 | Lambda 로그 확인 |
 
 ---
 
-## 감사 증적
+## 대시보드
 
-| 이벤트 | 저장소 | 내용 |
-|--------|--------|------|
-| CLI 상태 변경 | S3 audit/approval-transitions/ | who, when, what, why |
-| Failover | S3 {key}/failover.json | 트리거, 결과, 시간 |
-| Failback | S3 {key}/failback.json | operator_id, reason, 결과 |
-| 모든 DDB 변경 | eerf-history 테이블 | prev->new, who, when |
-| 보고서 발행 | S3 audit/reports/*.json | 메타데이터 |
+CloudWatch → Dashboards → eerf-edge-resilience-center
 
 ---
 
@@ -86,8 +51,8 @@ eerf --bucket {AUDIT_BUCKET} history {service_key} --axis OPERATION -n 5
 
 | 증상 | 확인 |
 |------|------|
-| 이메일 안 옴 | SNS Subscription 상태 |
-| 0 services 발견 | Discovery Lambda 로그 -> AssumeRole 에러 |
-| Pipeline 실패 | Step Functions 실행 이력 |
-| CLI operator 에러 | AWS 크레덴셜 확인 |
-| Canary FAILED (정상인데) | WAF AllowCanaryHealthCheck 룰 확인 |
+| 이메일 안 옴 | SNS Subscription + SES 인증 |
+| 0 services 발견 | Lambda 로그 (AssumeRole) |
+| Pipeline 실패 | SFN 실행 이력 |
+| Canary FAILED (정상인데) | WAF AllowCanaryHealthCheck 룰 |
+| Lambda No changes | `Remove-Item .build\\*.zip -Force` |
