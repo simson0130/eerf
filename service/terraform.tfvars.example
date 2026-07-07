@@ -1,9 +1,0 @@
-# Service Account Configuration Example
-# Copy this file to terraform.tfvars and fill in your values
-
-service_name = "my-service"
-domain_name  = "example-corp.com"
-
-# Platform Account ID (for IAM trust)
-platform_account_id      = "111111111111"
-platform_lambda_role_arn = "arn:aws:iam::111111111111:role/eerf-lambda-role"
