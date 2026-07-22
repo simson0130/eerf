@@ -1,0 +1,20 @@
+{
+  "account_id": "123456789012",
+  "domain_name": "example.yourdomain.com",
+  "app_subdomain": "app",
+  "hosted_zone_id": "Z0123456789ABCDEFGHIJ",
+  "alb_arn": "arn:aws:elasticloadbalancing:ap-northeast-2:123456789012:loadbalancer/app/your-alb/1234567890abcdef",
+  "alb_dns_name": "your-alb-1234567890.ap-northeast-2.elb.amazonaws.com",
+  "alb_zone_id": "ZWKZPGTI48KDX",
+  "alb_arn_suffix": "app/your-alb/1234567890abcdef",
+  "cloudfront_dns_name": "d111111abcdef8.cloudfront.net",
+  "cloudfront_zone_id": "Z2FDTNDATAQYW2",
+  "cloudfront_id": "E1A2B3C4D5E6F7",
+  "web_acl_arn": "arn:aws:wafv2:ap-northeast-2:123456789012:regional/webacl/your-web-acl/12345678-1234-1234-1234-123456789012",
+  "web_acl_name": "your-web-acl",
+  "web_acl_id": "12345678-1234-1234-1234-123456789012",
+  "emergency_sg_id": "sg-0123456789abcdef0",
+  "cross_account_role_arn": "arn:aws:iam::123456789012:role/eerf-platform-trust",
+  "canary_origin_protocol": "https",
+  "canary_origin_port": 443
+}

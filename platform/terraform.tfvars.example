@@ -1,61 +1,22 @@
-# EERF Platform Account Configuration Example
-# Copy this file to terraform.tfvars and fill in your values.
+# =============================================================================
+# EERF Platform Account 설정 (Example)
+# =============================================================================
+# 이 파일을 terraform.tfvars.shared로 복사하여 실제 값을 입력하세요.
+# =============================================================================
 
 region             = "ap-northeast-2"
 name_prefix        = "eerf"
-notification_email = "your-email@example.com"
+notification_email = "ops-team@yourcompany.com"
 
-# ─── Discovery Mode (택 1) ───────────────────────────────────────
-#
-# Option A: Organization 자동 발견 (추천)
-# Option B: 수동 계정 지정
-#
-# ─────────────────────────────────────────────────────────────
+org_id = "o-your-org-id"
 
-# Option A: Organization 모드
-org_id = "o-XXXXXXXXXX"
-discovery_targets          = []
+discovery_targets = []
 discovery_target_role_arns = []
 
-# Option B: 수동 지정 모드 (org_id = "" 일 때 사용)
-# org_id = ""
-# discovery_targets = [
-#   {
-#     account_id = "111111111111"
-#     role_arn   = "arn:aws:iam::111111111111:role/eerf-discovery-trust"
-#     region     = "ap-northeast-2"
-#   }
-# ]
-# discovery_target_role_arns = [
-#   "arn:aws:iam::111111111111:role/eerf-discovery-trust"
-# ]
-
 enable_scheduled_discovery    = true
-discovery_schedule_expression = "cron(0 21 * * ? *)"
+discovery_schedule_expression = "rate(1 day)"
 
-# Governance pipeline
-enable_governance_pipeline     = true
-governance_schedule_expression = "cron(0 * * * ? *)"
-slack_webhook_url              = ""
+services = {}
 
-# Protected services (populated after Discovery + Approval)
-services = {
-  # "app-example-1111" = {
-  #   account_id             = "111111111111"
-  #   domain_name            = "example.com"
-  #   app_subdomain          = "app"
-  #   hosted_zone_id         = "Z0123456789ABC"
-  #   alb_arn                = "arn:aws:elasticloadbalancing:ap-northeast-2:111111111111:loadbalancer/app/my-alb/50dc6c495c0c9188"
-  #   alb_dns_name           = "my-alb-123456789.ap-northeast-2.elb.amazonaws.com"
-  #   alb_zone_id            = "ZWKZPGTI48KDX"
-  #   alb_arn_suffix         = "app/my-alb/50dc6c495c0c9188"
-  #   cloudfront_dns_name    = "d111111abcdef8.cloudfront.net"
-  #   cloudfront_zone_id     = "Z2FDTNDATAQYW2"
-  #   cloudfront_id          = "E1ABCDEF123456"
-  #   web_acl_arn            = "arn:aws:wafv2:ap-northeast-2:111111111111:regional/webacl/my-acl/uuid"
-  #   web_acl_name           = "my-web-acl"
-  #   web_acl_id             = "12345678-1234-1234-1234-123456789012"
-  #   emergency_sg_id        = "sg-0123456789abcdef0"
-  #   cross_account_role_arn = "arn:aws:iam::111111111111:role/eerf-platform-trust"
-  # }
-}
+ses_from_email = "eerf@yourcompany.com"
+ses_to_emails  = "ops@yourcompany.com"

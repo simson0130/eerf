@@ -16,10 +16,8 @@ __pycache__/
 .pytest_cache/
 *.pyc
 
-# Lambda dependencies
-platform/lambda/yaml/
-platform/lambda/_yaml/
-platform/lambda/pyyaml-6.0.3.dist-info/
+# Node
+node_modules/
 
 # Temp files
 cf-config.json
@@ -28,15 +26,48 @@ cf-update-*.json
 # OS
 .DS_Store
 Thumbs.db
+~$*
 
 # IDE
 .vscode/
 .idea/
-.kiro/
 
 # Temporary/test files
 result.json
 payload.json
 test_result.txt
-approve-payload.json
+validate_result.txt
+tfplan
+
+# Internal docs
+docs/internal/
+
+# Service configurations (real account info)
+platform/services/*.json
+!platform/services/example-service.json
+
+# Steering with real account info
+.kiro/steering/product.md
+.kiro/steering/architecture.md
+
+# Portal config
+portal/src/config.ts
+!portal/src/config.example.ts
+
+# Tools with hardcoded account IDs
+tools/create-trust-roles.ps1
+tools/trust-policy.json
+
+# Temporary working files
+platform/.tmp/
+platform/out-dash.json
+platform/plan_output.txt
+
+# Service tfvars
+service/*.tfvars*
+service/*.plan
+service/*.json
+
+# Legacy
+platform/canary/canary.js
 *.egg-info/
