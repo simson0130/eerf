@@ -16,5 +16,10 @@
   "emergency_sg_id": "sg-0123456789abcdef0",
   "cross_account_role_arn": "arn:aws:iam::123456789012:role/eerf-platform-trust",
   "canary_origin_protocol": "https",
-  "canary_origin_port": 443
+  "canary_origin_port": 443,
+  "fo_options": {
+    "waf_switch": true,
+    "sg_attach": true,
+    "waf_exclude_rules": ["AllowCanaryHealthCheck", "RateBasedRule"]
+  }
 }
