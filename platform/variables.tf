@@ -16,6 +16,9 @@ variable "notification_email" {
   default     = ""
 }
 
+# -----------------------------
+# Service Account 정보 (멀티 서비스 지원)
+# -----------------------------
 variable "services" {
   description = "Map of services to protect. Each service defines its account and resource info."
   type = map(object({
@@ -35,6 +38,11 @@ variable "services" {
     web_acl_id          = string
     emergency_sg_id     = string
     cross_account_role_arn = string
+    canary_health_path     = optional(string, "/health")
+    canary_cdn_port        = optional(number, 443)
+    canary_cdn_protocol    = optional(string, "https")
+    canary_origin_port     = optional(number, 80)
+    canary_origin_protocol = optional(string, "http")
   }))
   default = {}
 }
@@ -43,6 +51,30 @@ variable "canary_schedule_expression" {
   description = "CloudWatch Synthetics canary schedule"
   type        = string
   default     = "rate(1 minute)"
+}
+
+variable "failover_wait_seconds" {
+  description = "DNS propagation wait time (seconds)"
+  type        = number
+  default     = 45
+}
+
+variable "validate_max_attempts" {
+  description = "DNS+HTTP validation retry count"
+  type        = number
+  default     = 8
+}
+
+variable "validate_interval_seconds" {
+  description = "Validation retry interval (seconds)"
+  type        = number
+  default     = 15
+}
+
+variable "alarm_evaluation_periods" {
+  description = "Canary consecutive failure count for alarm"
+  type        = number
+  default     = 2
 }
 
 variable "discovery_targets" {
@@ -56,7 +88,7 @@ variable "discovery_targets" {
 }
 
 variable "discovery_target_role_arns" {
-  description = "Service Account Role ARN list for Discovery Lambda"
+  description = "Discovery Lambda assume role ARN list"
   type        = list(string)
   default     = []
 }
@@ -68,17 +100,19 @@ variable "org_id" {
 }
 
 variable "enable_scheduled_discovery" {
-  type    = bool
-  default = true
+  description = "Enable scheduled auto-discovery"
+  type        = bool
+  default     = true
 }
 
 variable "discovery_schedule_expression" {
-  type    = string
-  default = "cron(0 21 * * ? *)"
+  description = "Discovery schedule expression"
+  type        = string
+  default     = "cron(0 21 * * ? *)"
 }
 
 variable "slack_webhook_url" {
-  description = "Slack Incoming Webhook URL"
+  description = "Slack webhook URL"
   type        = string
   default     = ""
 }
@@ -92,11 +126,76 @@ variable "enable_governance_pipeline" {
 variable "governance_schedule_expression" {
   description = "Governance pipeline schedule"
   type        = string
-  default     = "cron(0 * * * ? *)"
+  default     = "cron(0 0,12 * * ? *)"
+}
+
+variable "github_repo" {
+  description = "GitHub repository for onboarding PRs"
+  type        = string
+  default     = ""
 }
 
 variable "report_timezone_offset" {
-  description = "Report timezone UTC offset (hours). Default KST = 9"
+  description = "Report timezone UTC offset (hours)"
   type        = number
   default     = 9
+}
+
+variable "enable_enterprise_report" {
+  description = "Enable enterprise report generation"
+  type        = bool
+  default     = true
+}
+
+variable "history_ttl_days" {
+  description = "History table TTL (days)"
+  type        = number
+  default     = 180
+}
+
+variable "max_concurrent_failover" {
+  description = "Max concurrent failovers (blast radius limit)"
+  type        = number
+  default     = 3
+}
+
+variable "verify_ssl" {
+  description = "SSL verification (demo: false, production: true)"
+  type        = bool
+  default     = false
+}
+
+variable "environment" {
+  description = "Deployment environment (demo/staging/production)"
+  type        = string
+  default     = "demo"
+
+  validation {
+    condition     = contains(["demo", "staging", "production"], var.environment)
+    error_message = "environment must be one of: demo, staging, production"
+  }
+}
+
+variable "evidence_retention_days" {
+  description = "Evidence S3 Object Lock retention (days)"
+  type        = number
+  default     = 365
+}
+
+variable "dashboard_enabled" {
+  description = "CloudWatch Dashboard creation flag"
+  type        = bool
+  default     = true
+}
+
+variable "discovery_account_timeout" {
+  description = "Discovery per-account scan timeout (seconds)"
+  type        = number
+  default     = 60
+}
+
+variable "token_validity_hours" {
+  description = "Cognito token validity (hours)"
+  type        = number
+  default     = 8
 }
