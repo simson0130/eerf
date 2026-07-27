@@ -1,17 +1,27 @@
 # =============================================================================
-# services.tf — 서비스 설정 로딩 (services/*.json + var.services 병합)
+# services.tf - Service configuration loading (services/*.json + var.services)
 # =============================================================================
 
 locals {
-  # services/ 디렉토리의 모든 JSON 파일을 로드
-  _service_files = fileset("${path.module}/services", "*.json")
+  _service_files = [
+    for f in fileset("${path.module}/services", "*.json") :
+    f if !startswith(f, "example-")
+  ]
 
   _services_from_json = {
     for f in local._service_files :
     trimsuffix(f, ".json") => jsondecode(file("${path.module}/services/${f}"))
   }
 
-  # var.services (tfvars)와 JSON 로드 결과를 merge
-  # JSON 파일이 우선 (동일 key 존재 시 JSON 파일 값이 우선)
-  services = merge(var.services, local._services_from_json)
+  _services_raw = merge(var.services, local._services_from_json)
+
+  services = {
+    for k, v in local._services_raw : k => merge(v, {
+      canary_health_path     = try(v.canary_health_path, "/health")
+      canary_cdn_port        = try(v.canary_cdn_port, 443)
+      canary_cdn_protocol    = try(v.canary_cdn_protocol, "https")
+      canary_origin_port     = try(v.canary_origin_port, 80)
+      canary_origin_protocol = try(v.canary_origin_protocol, "http")
+    })
+  }
 }
