@@ -1,0 +1,10 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "S3", "Effect": "Allow", "Action": ["s3:PutObject", "s3:GetBucketLocation", "s3:ListAllMyBuckets"], "Resource": ["${canary_bucket_arn}", "${canary_bucket_arn}/*"] },
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "Metrics", "Effect": "Allow", "Action": ["cloudwatch:PutMetricData"], "Resource": "*", "Condition": { "StringEquals": { "cloudwatch:namespace": ["CloudWatchSynthetics", "${name_prefix}/Canary"] } } },
+    { "Sid": "SSM", "Effect": "Allow", "Action": ["ssm:GetParameter"], "Resource": "arn:aws:ssm:${region}:*:parameter/${name_prefix}/canary/token" },
+    { "Sid": "VPCAccess", "Effect": "Allow", "Action": ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DeleteNetworkInterface"], "Resource": "*" }
+  ]
+}

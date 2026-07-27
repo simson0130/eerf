@@ -1,0 +1,15 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "DynamoDB", "Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:Query", "dynamodb:Scan"], "Resource": ["${dynamodb_arn}", "${dynamodb_arn}/index/*", "${history_table_arn}", "${history_table_arn}/index/*"] },
+    { "Sid": "S3", "Effect": "Allow", "Action": ["s3:GetObject", "s3:ListBucket"], "Resource": ["${audit_bucket_arn}", "${audit_bucket_arn}/*"] },
+    { "Sid": "SNS", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "${sns_topic_arn}" },
+    { "Sid": "CloudWatch", "Effect": "Allow", "Action": ["cloudwatch:DescribeAlarms", "cloudwatch:GetMetricData"], "Resource": "*" },
+    { "Sid": "StepFunctions", "Effect": "Allow", "Action": ["states:ListExecutions", "states:ListStateMachines", "states:DescribeExecution", "states:StartExecution"], "Resource": "arn:aws:states:${region}:*:stateMachine:${name_prefix}-*" },
+    { "Sid": "Synthetics", "Effect": "Allow", "Action": ["synthetics:GetCanaryRuns", "synthetics:DescribeCanaries"], "Resource": "*" },
+    { "Sid": "Cognito", "Effect": "Allow", "Action": ["cognito-idp:ListUsers", "cognito-idp:AdminCreateUser", "cognito-idp:AdminDeleteUser", "cognito-idp:AdminAddUserToGroup", "cognito-idp:AdminRemoveUserFromGroup", "cognito-idp:AdminListGroupsForUser"], "Resource": "${cognito_user_pool_arn}" },
+    { "Sid": "Lambda", "Effect": "Allow", "Action": ["lambda:InvokeFunction"], "Resource": "arn:aws:lambda:${region}:*:function:${name_prefix}-*" },
+    { "Sid": "CrossAccount", "Effect": "Allow", "Action": ["sts:AssumeRole"], "Resource": ["arn:aws:iam::*:role/${name_prefix}-discovery-trust", "arn:aws:iam::*:role/${name_prefix}-platform-trust"] }
+  ]
+}
