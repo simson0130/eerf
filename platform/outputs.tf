@@ -14,16 +14,13 @@ output "audit_bucket_name" {
   value = aws_s3_bucket.audit.bucket
 }
 
+output "evidence_bucket_name" {
+  value       = aws_s3_bucket.evidence.bucket
+  description = "Evidence S3 bucket (Object Lock enabled)"
+}
+
 output "discovery_lambda_name" {
   value = aws_lambda_function.discovery.function_name
-}
-
-output "platform_lambda_role_arn" {
-  value = aws_iam_role.failover_lambda.arn
-}
-
-output "discovery_lambda_role_arn" {
-  value = aws_iam_role.discovery_lambda.arn
 }
 
 output "notification_email" {
