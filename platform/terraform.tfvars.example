@@ -1,22 +1,25 @@
 # =============================================================================
-# EERF Platform Account 설정 (Example)
-# =============================================================================
-# 이 파일을 terraform.tfvars.shared로 복사하여 실제 값을 입력하세요.
+# EERF Platform Account Settings (Example)
+# Copy to terraform.tfvars and fill real values.
 # =============================================================================
 
 region             = "ap-northeast-2"
 name_prefix        = "eerf"
 notification_email = "ops-team@yourcompany.com"
 
+# Organization auto-discovery
 org_id = "o-your-org-id"
 
+# Manual account registration
 discovery_targets = []
 discovery_target_role_arns = []
 
 enable_scheduled_discovery    = true
 discovery_schedule_expression = "rate(1 day)"
 
+# Services managed via platform/services/*.json
 services = {}
 
-ses_from_email = "eerf@yourcompany.com"
-ses_to_emails  = "ops@yourcompany.com"
+# Environment
+environment = "demo"  # demo | staging | production
+verify_ssl  = false   # true for production
