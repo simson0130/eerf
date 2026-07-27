@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "S3", "Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject", "s3:ListBucket"], "Resource": ["${audit_bucket_arn}", "${audit_bucket_arn}/*"] },
+    { "Sid": "DynamoDB", "Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"], "Resource": ["${dynamodb_arn}", "${dynamodb_arn}/index/*", "${history_table_arn}"] },
+    { "Sid": "SNS", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "${sns_topic_arn}" }
+  ]
+}

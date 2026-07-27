@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "DynamoDBHistory", "Effect": "Allow", "Action": ["dynamodb:PutItem"], "Resource": "${history_table_arn}" },
+    { "Sid": "DynamoDBStream", "Effect": "Allow", "Action": ["dynamodb:GetRecords", "dynamodb:GetShardIterator", "dynamodb:DescribeStream", "dynamodb:ListStreams"], "Resource": "${dynamodb_stream_arn}" },
+    { "Sid": "SNS", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "${sns_topic_arn}" }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "S3", "Effect": "Allow", "Action": ["s3:GetObject"], "Resource": "${audit_bucket_arn}/*" },
+    { "Sid": "SNS", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "${sns_topic_arn}" },
+    { "Sid": "SES", "Effect": "Allow", "Action": ["ses:SendEmail", "ses:SendRawEmail"], "Resource": "arn:aws:ses:${region}:*:identity/*" }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "SNS", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "${sns_topic_arn}" },
+    { "Sid": "DynamoDB", "Effect": "Allow", "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"], "Resource": ["${dynamodb_arn}", "${dynamodb_arn}/index/*"] },
+    { "Sid": "SSM", "Effect": "Allow", "Action": ["ssm:GetParameter"], "Resource": "arn:aws:ssm:${region}:*:parameter/${name_prefix}/canary/*" },
+    { "Sid": "CrossAccount", "Effect": "Allow", "Action": ["sts:AssumeRole"], "Resource": ${cross_account_role_arns} }
+  ]
+}

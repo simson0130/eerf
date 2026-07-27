@@ -1,0 +1,8 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    { "Sid": "Logs", "Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], "Resource": "*" },
+    { "Sid": "SSM", "Effect": "Allow", "Action": ["ssm:GetParameter", "ssm:PutParameter"], "Resource": "arn:aws:ssm:${region}:*:parameter/${name_prefix}/canary/*" },
+    { "Sid": "SNS", "Effect": "Allow", "Action": ["sns:Publish"], "Resource": "${sns_topic_arn}" }
+  ]
+}
